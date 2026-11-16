@@ -154,9 +154,59 @@ def evaluate_decision_tree(data: pd.DataFrame) -> dict:
 
 
 def format_factor(df: pd.DataFrame, column: str, lookup: dict) -> pd.Series:
+    """Convert the DfT's numeric category codes into human-readable descriptions.
+
+    This is only for display: the original fields remain unchanged for modelling.
+    """
     if lookup:
-        return df[column].map(lookup).fillna("Other / unmapped")
-    return pd.to_numeric(df[column], errors="coerce").astype("Int64").astype(str) + " mph"
+        return df[column].map(lookup).fillna("Unknown / unmapped category")
+    values = pd.to_numeric(df[column], errors="coerce").astype("Int64")
+    return values.astype(str).replace("<NA>", "Unknown") + " mph"
+
+
+def readable_preview(data: pd.DataFrame) -> pd.DataFrame:
+    """A simple, labelled preview for visitors unfamiliar with STATS19 codes."""
+    selected = [
+        "collision_severity", "speed_limit", "weather_conditions",
+        "light_conditions", "road_surface_conditions", "road_type",
+        "urban_or_rural_area", "number_of_vehicles", "number_of_casualties",
+    ]
+    selected = [col for col in selected if col in data.columns]
+    preview = data.loc[:, selected].head(20).copy()
+    if "collision_severity" in preview:
+        preview["collision_severity"] = (
+            pd.to_numeric(preview["collision_severity"], errors="coerce")
+            .map(SEVERITY_LABELS).fillna("Unknown")
+        )
+    for title, (column, mapping) in FACTORS.items():
+        if column in preview:
+            preview[column] = format_factor(preview, column, mapping)
+    names = {
+        "collision_severity": "Collision severity",
+        "number_of_vehicles": "Vehicles involved",
+        "number_of_casualties": "Casualties",
+        "speed_limit": "Speed limit",
+        "road_type": "Road type",
+        "light_conditions": "Lighting conditions",
+        "weather_conditions": "Weather conditions",
+        "road_surface_conditions": "Road surface",
+        "urban_or_rural_area": "Urban or rural",
+    }
+    return preview.rename(columns=names)
+
+
+def readable_tree_feature_names(pipeline: Pipeline) -> list[str]:
+    """Label the encoded Decision Tree features using their original DfT meanings."""
+    encoder = pipeline.named_steps["preprocessor"].named_transformers_["categorical"]
+    field_labels = {column: (title, mapping) for title, (column, mapping) in FACTORS.items()}
+    result = []
+    for column, categories in zip(CATEGORICAL_FEATURES, encoder.categories_):
+        title, mapping = field_labels[column]
+        for code in categories:
+            label = mapping.get(code, "Unknown / unmapped")
+            result.append(f"{title}: {label}")
+    result.append("Speed limit (mph)")
+    return result
 
 
 st.sidebar.header("Dataset")
@@ -226,12 +276,19 @@ with tab_overview:
             df["speed_limit"].value_counts().sort_index()
             .rename_axis("Speed limit (mph)").reset_index(name="Collisions")
         )
+        speeds["Speed limit"] = speeds["Speed limit (mph)"].astype(str) + " mph"
         st.plotly_chart(
-            px.bar(speeds, x="Speed limit (mph)", y="Collisions"),
+            px.bar(speeds, x="Speed limit", y="Collisions"),
             use_container_width=True,
         )
-    st.subheader("First 20 records")
-    st.dataframe(df.head(20), hide_index=True, use_container_width=True)
+    st.subheader("First 20 records — readable descriptions")
+    st.caption(
+        "The weather, lighting, road type, road surface and severity codes are "
+        "shown as words here. The source dataset is not changed."
+    )
+    st.dataframe(readable_preview(df), hide_index=True, use_container_width=True)
+    with st.expander("View the original coded records (optional)"):
+        st.dataframe(df.head(20), hide_index=True, use_container_width=True)
 
 with tab_explore:
     st.subheader("Compare conditions and severity")
@@ -385,7 +442,7 @@ with tab_ml:
     with st.expander("View the first three levels of the Decision Tree"):
         pipeline = results["model"]
         tree = pipeline.named_steps["classifier"]
-        features = pipeline.named_steps["preprocessor"].get_feature_names_out()
+        features = readable_tree_feature_names(pipeline)
         fig, ax = plt.subplots(figsize=(21, 9))
         plot_tree(
             tree, feature_names=features,

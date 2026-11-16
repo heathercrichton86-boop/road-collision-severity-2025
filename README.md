@@ -4,10 +4,10 @@ CarApp is a Streamlit dashboard built for a UWS Advanced Data Science coursework
 
 ## What's included
 
-- **Dataset overview:** totals for fatal, serious and slight collisions; dataset preview
-- **Collision analysis:** interactive charts and tables for weather, lighting, road surface, speed limits, road type and urban/rural areas
+- **Dataset overview:** totals for fatal, serious and slight collisions; readable, labelled dataset preview (with optional raw-code view)
+- **Collision analysis:** interactive charts and tables with descriptive category names (for example, Fine weather, Daylight, Wet or damp) for weather, lighting, road surface, speed limits, road type and urban/rural areas
 - **Data preprocessing:** missing-value checks, exact duplicates and notes about DfT numerical codes
-- **Decision Tree:** model training, test accuracy, precision/recall/F1-score, confusion matrix and simplified tree diagram
+- **Decision Tree:** model training, test accuracy, precision/recall/F1-score, confusion matrix and simplified tree diagram with readable input labels
 
 ## Dataset
 
@@ -78,3 +78,7 @@ The tunnel address is temporary and changes when the session ends. The tunnel co
 ## Project submission
 
 Dr Mahmood's updated instructions require a ZIP submission containing the **Word report**, **Jupyter notebook**, **dataset**, and **Streamlit application folder**. This download contains only the **Streamlit application component**. Add your notebook, report and dataset separately to the final university submission ZIP.
+
+## Readable categories
+
+The dashboard converts DfT categorical codes into plain-English descriptions for display. It does **not** alter the original CSV or change the Decision Tree training procedure. Collision totals and measurements such as speed limits remain numeric.
