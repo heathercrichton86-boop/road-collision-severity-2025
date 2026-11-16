@@ -1,12 +1,3 @@
-"""CarApp: 2025 Great Britain road collision data exploration and Decision Tree.
-
-Run locally with:
-    pip install -r requirements.txt
-    streamlit run CarApp.py
-
-Upload the DfT 2025 collision CSV in the sidebar. The application fits the same
-Decision Tree classifier as the companion coursework notebook on that CSV.
-"""
 
 import matplotlib.pyplot as plt
 import pandas as pd
